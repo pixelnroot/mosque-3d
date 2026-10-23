@@ -1,0 +1,756 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mosque 3D view from the south-east corner</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mosque 3D">
+<meta name="format-detection" content="telephone=no">
+<meta name="theme-color" content="#cfe3f0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#20303a" media="(prefers-color-scheme: dark)">
+<style>
+:root{--ui-bg:rgba(255,255,255,.80);--ui-fg:#2b2a25;--ui-line:rgba(0,0,0,.16);--ui-on:#2f5d46;--ui-on-fg:#fff;--ui-press:rgba(0,0,0,.12);--page:#cfe3f0;--k:1}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--ui-bg:rgba(30,30,27,.80);--ui-fg:#f1eee4;--ui-line:rgba(255,255,255,.22);--ui-on:#7fb594;--ui-on-fg:#10201a;--ui-press:rgba(255,255,255,.16);--page:#20303a}}
+:root[data-theme="dark"]{--ui-bg:rgba(30,30,27,.80);--ui-fg:#f1eee4;--ui-line:rgba(255,255,255,.22);--ui-on:#7fb594;--ui-on-fg:#10201a;--ui-press:rgba(255,255,255,.16);--page:#20303a}
+/* all UI sizes are rem; script sets the root size so the UI stays phone-sized even when the browser lays the page out at desktop width */
+*{box-sizing:border-box}
+html{font-size:16px;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;background:var(--page);font-family:Georgia,"Times New Roman",serif;color:var(--ui-fg);-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+body{position:fixed;inset:0;width:100%}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab;outline:none}
+#c:active{cursor:grabbing}
+.glass{background:var(--ui-bg);border:1px solid var(--ui-line);-webkit-backdrop-filter:blur(14px) saturate(1.3);backdrop-filter:blur(14px) saturate(1.3)}
+.top{position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top,0px)*var(--k));padding:.625rem max(.75rem,calc(env(safe-area-inset-right,0px)*var(--k))) 0 max(.75rem,calc(env(safe-area-inset-left,0px)*var(--k)));pointer-events:none}
+.title{pointer-events:auto;display:inline-block;max-width:100%;border-radius:.875rem;padding:.5rem .875rem;font-size:1rem;line-height:1.35}
+.title small{display:block;font-size:.8125rem;opacity:.75;margin-top:.125rem;transition:opacity .5s}
+.title.quiet small{opacity:0}.title.gone small{display:none}
+/* bottom dock: tabs, then the camera controls */
+#dock{position:fixed;left:max(.75rem,calc(env(safe-area-inset-left,0px)*var(--k)));right:max(.75rem,calc(env(safe-area-inset-right,0px)*var(--k)));bottom:calc(.75rem + env(safe-area-inset-bottom,0px)*var(--k));z-index:6;border-radius:1.25rem;padding:.5rem;display:flex;flex-direction:column;gap:.5rem;pointer-events:auto;touch-action:none}
+.seg{display:flex;gap:.25rem;padding:.1875rem;border-radius:999px;background:var(--ui-press)}
+.seg button{flex:1 1 0;min-width:0}
+button{font:inherit;font-size:1rem;line-height:1.2;min-height:2.75rem;min-width:2.75rem;padding:.375rem .875rem;border-radius:999px;border:0;background:transparent;color:var(--ui-fg);cursor:pointer;touch-action:manipulation;-webkit-appearance:none;appearance:none;display:inline-flex;align-items:center;justify-content:center;gap:.4375rem;white-space:nowrap;transition:transform .12s,background-color .15s}
+button svg{width:1.25rem;height:1.25rem;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+button:active{transform:scale(.95);background:var(--ui-press)}
+button[aria-pressed="true"],button[aria-selected="true"]{background:var(--ui-on);color:var(--ui-on-fg)}
+button:focus-visible{outline:3px solid #e0a800;outline-offset:2px}
+#panel{display:flex;gap:.5rem;align-items:center;min-width:0}
+#panel[hidden]{display:none}
+#zoom{flex:none;width:11.5rem}
+#views{flex:1 1 auto;min-width:0;display:flex;gap:.5rem;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;scrollbar-width:none;touch-action:pan-x;
+  -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 1.25rem),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 1.25rem),transparent);padding-right:1.25rem}
+#views::-webkit-scrollbar{display:none}
+#views button{flex:none;scroll-snap-align:start;border:1px solid var(--ui-line)}
+#views button[aria-pressed="true"]{border-color:transparent}
+#notes{position:fixed;right:max(.75rem,calc(env(safe-area-inset-right,0px)*var(--k)));top:calc(4.5rem + env(safe-area-inset-top,0px)*var(--k));width:min(22rem,calc(100% - 1.5rem));overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;font-size:.9375rem;line-height:1.5;display:none;pointer-events:auto;z-index:5;user-select:text;-webkit-user-select:text;border-radius:1.25rem;padding:.75rem 1rem}
+#notes:focus{outline:none}
+#notes .hd{display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin:0 0 .375rem}
+#notes h2{font-size:1rem;margin:0}
+#notes .x{min-height:2.75rem;min-width:2.75rem;padding:0;font-size:1.5rem;line-height:1.3;border:1px solid var(--ui-line)}
+#notes ul{margin:0;padding-left:1.125rem}
+#msg{position:fixed;inset:0;display:none;align-items:center;justify-content:center;text-align:center;padding:1.5rem;font-size:1rem;z-index:9}
+/* phone portrait: sheet spans the width above the dock; controls on two rows */
+[data-compact="1"] #notes{left:max(.75rem,calc(env(safe-area-inset-left,0px)*var(--k)));right:max(.75rem,calc(env(safe-area-inset-right,0px)*var(--k)));width:auto;top:auto}
+[data-compact="1"] #panel{flex-direction:column;align-items:stretch}
+[data-compact="1"] #zoom{width:auto}
+[data-compact="1"] .title{display:block}
+/* landscape phone: dock becomes one row */
+[data-short="1"] #dock{flex-direction:row;align-items:center}
+[data-short="1"] #dock>.seg{flex:none;width:15rem}
+[data-short="1"] #panel{flex:1 1 auto;flex-direction:row}
+[data-short="1"] #zoom{width:12rem}
+[data-short="1"] .seg button{padding-left:.5rem;padding-right:.5rem}
+[data-short="1"] .title small{display:none}
+@media (prefers-reduced-motion:reduce){.title small,button{transition:none}}
+</style>
+</head>
+<body>
+<canvas id="c" aria-label="3D model of the mosque"></canvas>
+<div class="top"><div class="glass title" id="ttl">Mosque, south-east corner view<small>Drag to rotate. Pinch or scroll to zoom.</small></div></div>
+<div id="notes" class="glass" role="region" aria-label="Plan notes" tabindex="-1">
+  <div class="hd"><h2>What the plan gives</h2><button class="x" id="nx" aria-label="Close plan notes">&times;</button></div>
+  <ul>
+    <li>Main block 36'-0" wide (west to east) by 50'-0" long (south to north), walls 1'-0" thick.</li>
+    <li>Prayer hall 25'-0" x 48'-0", veranda 8'-0" x 48'-0" on the east side, split by a wall with a 12'-0" double door.</li>
+    <li>12'-0" entrance opening in the east wall with 4'-6" x 12'-0" steps.</li>
+    <li>Mihrab 10'-0" wide and 6'-0" deep on the west wall, with a round back and a plain white dome 10'-0" high.</li>
+    <li>Arched windows 4'-0" wide: three on the south and north walls, four on the east wall.</li>
+    <li>Stair to the roof at the south end of the veranda, with a small headroom house on the roof.</li>
+    <li>North of the hall: ablution area 8'-0" deep for 10 people, and a 10'-0" toilet block with 3 WCs to the north-west.</li>
+    <li>Minaret, 4'-0" across, in white and gold, on the roof over the north-west corner column, with four loudspeakers and a gold new moon and star.</li>
+    <li>Roof edge projects 6" beyond every wall so rain does not run onto the windows.</li>
+    <li>Brick wall 10'-0" high along the road, with a big gate at the walkway and a small pocket gate into the yard. Brick wall on the west side, 5'-0" from the mihrab.</li>
+    <li>Traffic keeps to the left (British rule). People on the walkway wear white thobes.</li>
+    <li>East front wall 10'-0" from the entrance, with a walking path outside it running north to south.</li>
+    <li>East-west road 10'-0" north of the ablution wall, with moving vehicles.</li>
+  </ul>
+  <p style="margin:8px 0 0;opacity:.8">Style from the photo: cream walls, white plinth and cornice, crenellated parapet, arched windows with white frames and bars, dark wooden double door, gold crescent on a tiered minaret. Storey heights are assumed (roof at 12'-0").</p>
+</div>
+<nav id="dock" class="glass" aria-label="Controls">
+  <div class="seg" role="tablist" aria-label="Sections">
+    <button role="tab" id="tabView" aria-selected="true" aria-controls="panel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>View</button>
+    <button role="tab" id="nb" aria-selected="false" aria-controls="notes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h7"/></svg>Plan notes</button>
+  </div>
+  <div id="panel" role="tabpanel" aria-labelledby="tabView">
+    <div id="zoom" class="seg" role="group" aria-label="Camera distance">
+      <button data-z="close" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2M8.5 11h5M11 8.5v5"/></svg>Close</button>
+      <button data-z="far" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2M8.5 11h5"/></svg>Far</button>
+    </div>
+    <div id="views" role="group" aria-label="Camera angle">
+      <button data-v="se" aria-pressed="true">South-east</button>
+      <button data-v="e" aria-pressed="false">East front</button>
+      <button data-v="s" aria-pressed="false">South side</button>
+      <button data-v="nw" aria-pressed="false">North-west</button>
+      <button data-v="road" aria-pressed="false">Road side</button>
+      <button data-v="air" aria-pressed="false">Aerial</button>
+    </div>
+  </div>
+</nav>
+<div id="msg" role="alert"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+"use strict";
+var msg=document.getElementById('msg');
+function fail(t){msg.style.display='flex';msg.textContent=t;}
+if(!window.THREE){fail('The 3D library could not be loaded. Check the connection and reload.');return;}
+var canvas=document.getElementById('c');
+var renderer;
+try{renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true});}catch(e){fail('This device could not start WebGL, so the 3D view cannot be shown.');return;}
+var coarse=window.matchMedia&&window.matchMedia('(pointer:coarse)').matches;
+var reduceMotion=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+var pr=Math.min(window.devicePixelRatio||1,coarse?1.5:2);
+renderer.setPixelRatio(pr);
+canvas.addEventListener('webglcontextlost',function(e){e.preventDefault();fail('The 3D view was paused by the device. It will resume when the page is visible again.');});
+canvas.addEventListener('webglcontextrestored',function(){location.reload();});
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputEncoding=THREE.sRGBEncoding;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.05;
+var scene=new THREE.Scene();
+scene.fog=new THREE.Fog(0xdde9ec,190,560);
+var camera=new THREE.PerspectiveCamera(38,1,1,2200);
+var movers=[];
+
+/* ---------- plan to scene coordinates: X east, Y up, Z south ---------- */
+function X(x){return x-18;}
+function Z(y){return -(y-25);}
+
+/* ---------- textures ---------- */
+function mkTex(w,h,draw,rep){
+  var cv=document.createElement('canvas');cv.width=w;cv.height=h;
+  var cx=cv.getContext('2d');draw(cx,w,h);
+  var t=new THREE.CanvasTexture(cv);t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  t.encoding=THREE.sRGBEncoding;t.anisotropy=4;if(rep)t.repeat.set(rep[0],rep[1]);return t;
+}
+function speckle(cx,w,h,n,a){
+  for(var i=0;i<n;i++){var v=Math.random()<.5?0:255;cx.fillStyle='rgba('+v+','+v+','+v+','+(Math.random()*a)+')';
+    cx.fillRect(Math.random()*w,Math.random()*h,1+Math.random()*2,1+Math.random()*2);}
+}
+var texStucco=mkTex(256,256,function(cx,w,h){cx.fillStyle='#e8dcb0';cx.fillRect(0,0,w,h);speckle(cx,w,h,5000,.12);},[.25,.25]);
+var texGrass=mkTex(256,256,function(cx,w,h){cx.fillStyle='#6f9b47';cx.fillRect(0,0,w,h);
+  for(var i=0;i<9000;i++){var g=90+Math.random()*70;cx.fillStyle='rgba('+(60+Math.random()*40)+','+g+','+(40+Math.random()*30)+',.35)';cx.fillRect(Math.random()*w,Math.random()*h,1.5,3+Math.random()*3);}},[70,70]);
+var texPave=mkTex(256,256,function(cx,w,h){cx.fillStyle='#cdbfb1';cx.fillRect(0,0,w,h);cx.strokeStyle='rgba(90,75,65,.55)';cx.lineWidth=2;
+  for(var i=0;i<=8;i++){cx.beginPath();cx.moveTo(i*32,0);cx.lineTo(i*32,h);cx.stroke();cx.beginPath();cx.moveTo(0,i*32);cx.lineTo(w,i*32);cx.stroke();}
+  speckle(cx,w,h,1500,.15);},[1,1]);
+var texTile=mkTex(256,256,function(cx,w,h){for(var i=0;i<4;i++)for(var j=0;j<4;j++){cx.fillStyle=((i+j)%2)?'#d8d2c2':'#c9c2b0';cx.fillRect(i*64,j*64,64,64);}},[4,12]);
+var texBrick=mkTex(256,256,function(cx,w,h){cx.fillStyle='#d1c8b6';cx.fillRect(0,0,w,h);var rows=6,bw=w/3,bh=h/rows;
+  var cl=['#9c4a36','#a85238','#b05a3d','#93432f','#a04d39'];
+  for(var r=0;r<rows;r++){for(var c=-1;c<4;c++){var x=c*bw+(r%2?bw/2:0);cx.fillStyle=cl[Math.floor(Math.random()*cl.length)];cx.fillRect(x+3,r*bh+3,bw-6,bh-6);}}
+  speckle(cx,w,h,4000,.18);},[1,1]);
+function brickMat(L,H){var t=texBrick.clone();t.needsUpdate=true;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.encoding=THREE.sRGBEncoding;t.repeat.set(Math.max(1,L/3),Math.max(1,H/2.4));return new THREE.MeshStandardMaterial({map:t,roughness:.95});}
+var texCarpet=mkTex(256,256,function(cx,w,h){cx.fillStyle='#2f6b52';cx.fillRect(0,0,w,h);cx.fillStyle='#f1ecd8';for(var i=0;i<8;i++){cx.fillRect(i*32,0,3,h);}},[6,1]);
+
+/* ---------- materials ---------- */
+function std(c,r,extra){var o={color:c,roughness:r==null?.9:r,metalness:0};if(extra)for(var k in extra)o[k]=extra[k];return new THREE.MeshStandardMaterial(o);}
+var M={
+  wall:std(0xffffff,.96,{map:texStucco}),
+  white:std(0xf3efe3,.85),
+  plinth:std(0xd2cec2,.9),
+  roof:std(0x938f85,.95),
+  niche:std(0xd7c88c,.95),
+  wood:std(0x5a2a1b,.55),
+  woodD:std(0x44200f,.6),
+  gold:std(0xd6a21a,.35,{metalness:.7}),
+  glass:std(0x86bad4,.06,{metalness:.35,transparent:true,opacity:.82,emissive:0x0d2a3c,emissiveIntensity:.45}),
+  glassD:std(0x233744,.1,{metalness:.5}),
+  chrome:std(0xdfe3e6,.2,{metalness:.9}),
+  water:std(0x9fd3ee,.1,{transparent:true,opacity:.7}),
+  dark:std(0x1d1b19,.9),
+  iron:std(0x1c1c1c,.6,{metalness:.4}),
+  pave:std(0xffffff,.95,{map:texPave}),
+  tile:std(0xffffff,.8,{map:texTile}),
+  carpet:std(0xffffff,.95,{map:texCarpet}),
+  grey:std(0x8b8d8f,.5,{metalness:.5}),
+  concrete:std(0xb9b5aa,.95),
+  ceil:std(0xf1ede2,.95,{side:THREE.DoubleSide}),
+  pure:std(0xf7f4ea,.6),
+  pureD:std(0xf7f4ea,.6,{side:THREE.DoubleSide}),
+  gold2:std(0xdcaa2d,.4,{metalness:.25,emissive:0x4a3306,emissiveIntensity:.3}),
+  grey2:std(0x8b8d8f,.5,{metalness:.5,side:THREE.DoubleSide}),
+  ironG:std(0x1f4a36,.55,{metalness:.35})
+};
+
+/* ---------- helpers ---------- */
+function add(m,sh){m.castShadow=sh!==false;m.receiveShadow=true;scene.add(m);return m;}
+function bx(xa,xb,ya,yb,za,zb,mat,sh){
+  var m=new THREE.Mesh(new THREE.BoxGeometry(xb-xa,zb-za,yb-ya),mat);
+  m.position.set(X((xa+xb)/2),(za+zb)/2,Z((ya+yb)/2));return add(m,sh);
+}
+function rectHole(u0,v0,u1,v1){var p=new THREE.Path();p.moveTo(u0,v0);p.lineTo(u1,v0);p.lineTo(u1,v1);p.lineTo(u0,v1);p.lineTo(u0,v0);return p;}
+function archHole(u0,w,v0,vs){var p=new THREE.Path();var r=w/2;p.moveTo(u0,v0);p.lineTo(u0+w,v0);p.lineTo(u0+w,vs);p.absarc(u0+r,vs,r,0,Math.PI,false);p.lineTo(u0,v0);return p;}
+function archShape(w,y0,ys){var s=new THREE.Shape();var r=w/2;s.moveTo(-r,y0);s.lineTo(r,y0);s.lineTo(r,ys);s.absarc(0,ys,r,0,Math.PI,false);s.lineTo(-r,y0);return s;}
+function archPath(w,y0,ys){var p=new THREE.Path();var r=w/2;p.moveTo(-r,y0);p.lineTo(r,y0);p.lineTo(r,ys);p.absarc(0,ys,r,0,Math.PI,false);p.lineTo(-r,y0);return p;}
+function wallGeo(len,h,t,holes){
+  var s=new THREE.Shape();s.moveTo(0,0);s.lineTo(len,0);s.lineTo(len,h);s.lineTo(0,h);s.lineTo(0,0);
+  for(var i=0;i<holes.length;i++)s.holes.push(holes[i]);
+  return new THREE.ExtrudeGeometry(s,{depth:t,bevelEnabled:false});
+}
+/* wall running west-east: plan x xa..xb, thickness yS..yN */
+function wallX(xa,xb,yS,yN,h,holes,mat){
+  var m=new THREE.Mesh(wallGeo(xb-xa,h,yN-yS,holes||[]),mat||M.wall);
+  m.position.set(X(xa),0,Z(yN));return add(m);
+}
+/* wall running south-north: plan y ya..yb, thickness xW..xE */
+function wallY(ya,yb,xW,xE,h,holes,mat){
+  var m=new THREE.Mesh(wallGeo(yb-ya,h,xE-xW,holes||[]),mat||M.wall);
+  m.rotation.y=Math.PI/2;m.position.set(X(xW),0,Z(ya));return add(m);
+}
+function place(g,face,px,py,z){
+  var rot={S:0,E:Math.PI/2,N:Math.PI,W:-Math.PI/2}[face];
+  g.rotation.y=rot;g.position.set(X(px),z,Z(py));scene.add(g);return g;
+}
+function plane(geo,mat,g,x,y,z){var m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.castShadow=false;m.receiveShadow=true;g.add(m);return m;}
+function boxIn(g,w,h,d,mat,x,y,z,sh){var m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.castShadow=sh!==false;m.receiveShadow=true;g.add(m);return m;}
+
+/* arched window with white frame, glass, bars; origin = centre of sill on the outer face */
+function windowAt(face,px,py,sill,w,yS,inner){
+  var g=new THREE.Group();var ys=yS||4;var r=w/2;
+  var ring=archShape(w+.8,-.4,ys);ring.holes.push(archPath(w,0,ys));
+  var fr=new THREE.Mesh(new THREE.ExtrudeGeometry(ring,{depth:.3,bevelEnabled:false}),M.white);
+  fr.castShadow=true;fr.receiveShadow=true;g.add(fr);
+  if(inner)return place(g,face,px,py,sill);
+  plane(new THREE.ShapeGeometry(archShape(w,0,ys)),M.glass,g,0,0,-.5);
+  var nb=Math.round(w/.4);
+  for(var i=0;i<=nb;i++){var x=-r+.2+(w-.4)*i/nb;boxIn(g,.07,ys,.07,M.white,x,ys/2,-.3,false);}
+  boxIn(g,w,.1,.1,M.white,0,ys-.8,-.3,false);boxIn(g,w,.12,.12,M.white,0,ys,-.3,false);
+  var angs=[.35,.7,1.05,1.4,1.75,2.1,2.45,2.8];
+  for(var k=0;k<angs.length;k++){var a=angs[k];var b=boxIn(g,r,.05,.05,M.white,Math.cos(a)*r/2,ys+Math.sin(a)*r/2,-.3,false);b.rotation.z=a;}
+  boxIn(g,w+(w>3?1.1:.8),.28,.75,M.white,0,-.55,.2);
+  return place(g,face,px,py,sill);
+}
+/* big double door: origin = centre of the doorway on the face */
+function doorAt(face,px,py,base,w,h){
+  var g=new THREE.Group();var n=4;var lw=w/n;
+  var fr=new THREE.Shape();fr.moveTo(-w/2-.7,0);fr.lineTo(w/2+.7,0);fr.lineTo(w/2+.7,h+.7);fr.lineTo(-w/2-.7,h+.7);fr.lineTo(-w/2-.7,0);
+  var hole=new THREE.Path();hole.moveTo(-w/2,0);hole.lineTo(w/2,0);hole.lineTo(w/2,h);hole.lineTo(-w/2,h);hole.lineTo(-w/2,0);fr.holes.push(hole);
+  var f=new THREE.Mesh(new THREE.ExtrudeGeometry(fr,{depth:.3,bevelEnabled:false}),M.white);f.castShadow=true;g.add(f);
+  for(var i=0;i<n;i++){
+    var cx=-w/2+lw*(i+.5);
+    boxIn(g,lw-.06,h,.25,M.wood,cx,h/2,-.4);
+    boxIn(g,lw-.8,h*.38,.08,M.woodD,cx,h*.27,-.25,false);
+    boxIn(g,lw-.8,h*.30,.08,M.woodD,cx,h*.72,-.25,false);
+    boxIn(g,lw-.9,.35,.1,M.gold,cx,h*.93,-.25,false);
+  }
+  for(var j=-1;j<=1;j+=2){var hd=new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,.9,10),M.gold);hd.position.set(j*.25,h*.45,-.2);g.add(hd);}
+  var r=w/2;boxIn(g,w,.5,.12,M.gold,0,h+.35,.0,false);
+  return place(g,face,px,py,base);
+}
+
+/* ---------- crenellated parapet ---------- */
+function niche(g,w,h){
+  var s=new THREE.Shape();var r=w/2;s.moveTo(-r,0);s.lineTo(r,0);s.lineTo(r,h-r);s.absarc(0,h-r,r,0,Math.PI,false);s.lineTo(-r,0);
+  return new THREE.Mesh(new THREE.ShapeGeometry(s),M.niche);
+}
+function parapet(side,a,b,c,zTop,hBase,hMer,mw,gap,decor){
+  var t=.6,i;
+  function B(u0,u1,za,zb){
+    if(side==='S')return bx(u0,u1,c,c+t,za,zb,M.wall);
+    if(side==='N')return bx(u0,u1,c-t,c,za,zb,M.wall);
+    if(side==='E')return bx(c-t,c,u0,u1,za,zb,M.wall);
+    return bx(c,c+t,u0,u1,za,zb,M.wall);
+  }
+  B(a,b,zTop,zTop+hBase);
+  var L=b-a;var n=Math.floor((L+gap)/(mw+gap));var tot=n*mw+(n-1)*gap;var s0=a+(L-tot)/2;
+  for(i=0;i<n;i++){
+    var u0=s0+i*(mw+gap),u1=u0+mw;
+    B(u0,u1,zTop+hBase,zTop+hBase+hMer);
+    if(decor){
+      var d=niche(null,mw*.55,hMer*.72);var um=(u0+u1)/2;var zz=zTop+hBase+hMer*.12;
+      if(side==='S'){d.position.set(X(um),zz,Z(c)+.02);}
+      if(side==='N'){d.position.set(X(um),zz,Z(c)-.02);d.rotation.y=Math.PI;}
+      if(side==='E'){d.position.set(X(c)+.02,zz,Z(um));d.rotation.y=Math.PI/2;}
+      if(side==='W'){d.position.set(X(c)-.02,zz,Z(um));d.rotation.y=-Math.PI/2;}
+      scene.add(d);
+    }
+  }
+}
+
+/* ======================= GROUND ======================= */
+var ground=new THREE.Mesh(new THREE.PlaneGeometry(900,900),new THREE.MeshStandardMaterial({map:texGrass,color:0xffffff,roughness:1}));
+ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
+function paveMat(w,d){var t=texPave.clone();t.needsUpdate=true;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.encoding=THREE.sRGBEncoding;t.repeat.set(Math.max(1,w/12),Math.max(1,d/12));return new THREE.MeshStandardMaterial({map:t,roughness:.95});}
+bx(40.5,47,20,30,0,.1,paveMat(6.5,10),false);           /* path from the steps to the gate: 10 ft from the entrance */
+bx(46.9,52.9,-160,68,0,.12,paveMat(6,228),false);        /* walking path outside the wall, north to south */
+bx(46.9,52.9,88,200,0,.12,paveMat(6,112),false);
+bx(52.9,53.4,-160,68,0,.3,M.plinth,false);bx(52.9,53.4,88,200,0,.3,M.plinth,false);
+bx(-1,40.5,-6,-.3,0,.06,M.concrete,false);   /* paved strip along the south side */
+bx(-.3,.0,-.3,0,0,.01,M.concrete,false);
+
+/* ======================= MAIN BLOCK WALLS ======================= */
+var winCx=[6,13,20];
+/* south wall (x 1..35) */
+(function(){
+  var h=[];for(var i=0;i<3;i++)h.push(archHole(winCx[i]-2-1,4,4.5,8.5));
+  wallX(1,35,0,1,12,h);
+})();
+/* north wall of the hall and veranda (x 1..35): windows + side door to the ablution */
+(function(){
+  var h=[];for(var i=0;i<3;i++)h.push(archHole(winCx[i]-2-1,4,4.5,8.5));
+  h.push(rectHole(29.5-1,1.5,34.5-1,8.5));
+  wallX(1,35,49,50,12,h);
+})();
+/* east wall: 4 windows + 12' entrance opening */
+(function(){
+  var h=[];[5,13,33,41].forEach(function(y){h.push(archHole(y,4,4.5,8.5));});
+  h.push(rectHole(19,1.5,31,11));
+  wallY(0,50,35,36,12,h);
+})();
+/* west wall: mihrab opening 10' wide */
+wallY(0,50,0,1,12,[archHole(20,10,1.5,4.3)]);
+/* partition between hall and veranda: 12' door and windows */
+(function(){
+  var h=[];[5,13,33,41].forEach(function(y){h.push(archHole(y-1,4,4.5,8.5));});
+  h.push(rectHole(19-1,1.5,31-1,10.5));
+  wallY(1,49,26,27,12,h);
+})();
+
+/* windows and door (outer faces) */
+winCx.forEach(function(cx){windowAt('S',cx,0,4.5,4);});
+winCx.forEach(function(cx){windowAt('N',cx,50,4.5,4);});
+[7,15,35,43].forEach(function(cy){windowAt('E',36,cy,4.5,4);});
+[7,15,35,43].forEach(function(cy){windowAt('E',27,cy,4.5,4);});
+doorAt('E',27,25,1.5,12,9);
+
+/* white plinth skirt */
+bx(-.25,36.25,-.25,0,0,1.5,M.plinth);
+bx(-.25,0,0,19,0,1.5,M.plinth);bx(-.25,0,31,50,0,1.5,M.plinth);
+bx(36,36.25,0,50,0,1.5,M.plinth);
+/* entrance frame: pilasters and a lintel band on the east face */
+bx(36,36.35,17.7,18.9,0,12,M.white);
+bx(36,36.35,31.1,32.3,0,12,M.white);
+bx(36,36.55,17.4,32.6,10.6,12,M.white);
+bx(36,36.35,19.0,31.0,0,1.5,M.plinth);
+/* pilasters between the windows on the south and east faces */
+[0.5,10,16.5,24,35.5].forEach(function(x){});
+/* cornice band under the parapet */
+bx(-.5,36.5,-.5,0,11.1,11.9,M.white);
+bx(-.5,36.5,50,50.5,11.1,11.9,M.white);
+bx(-.5,0,0,50,11.1,11.9,M.white);
+bx(36,36.5,0,50,11.1,11.9,M.white);
+/* thin darker line below the band */
+bx(-.4,36.4,-.4,0,10.85,11.1,M.plinth);
+bx(36,36.4,0,50,10.85,11.1,M.plinth);
+
+/* floors and ceiling */
+bx(1,26,1,49,1.3,1.5,M.carpet,false);
+bx(27,35,1,49,1.3,1.5,M.tile,false);
+(function(){
+  var c=new THREE.Mesh(new THREE.PlaneGeometry(34,48),M.ceil);c.rotation.x=Math.PI/2;c.position.set(X(18),11.4,Z(25));scene.add(c);
+})();
+bx(1,35,1,49,11.4,11.95,M.roof,false);
+
+/* mihrab: half-round back wall and a dome, apex 10 ft above ground, plain white */
+(function(){
+  var cx0=X(0),zw=5.0;
+  var sh=new THREE.Shape();
+  sh.moveTo(cx0,6);
+  sh.absellipse(cx0,0,7,6,Math.PI/2,Math.PI*1.5,false);
+  sh.lineTo(cx0,-5);
+  sh.absellipse(cx0,0,6,5,Math.PI*1.5,Math.PI/2,true);
+  sh.lineTo(cx0,6);
+  var wall=new THREE.Mesh(new THREE.ExtrudeGeometry(sh,{depth:zw,bevelEnabled:false,curveSegments:48}),M.pure);
+  wall.rotation.x=-Math.PI/2;wall.castShadow=true;wall.receiveShadow=true;scene.add(wall);
+  var dome=new THREE.Mesh(new THREE.SphereGeometry(1,64,32,-Math.PI/2,Math.PI,0,Math.PI/2),M.pureD);
+  dome.scale.set(7,5,6);dome.position.set(cx0,zw,0);dome.castShadow=true;dome.receiveShadow=true;scene.add(dome);
+  var fl=new THREE.Shape();fl.moveTo(cx0,5);fl.absellipse(cx0,0,6,5,Math.PI/2,Math.PI*1.5,false);fl.lineTo(cx0,5);
+  var floor=new THREE.Mesh(new THREE.ShapeGeometry(fl,32),M.concrete);floor.rotation.x=-Math.PI/2;floor.position.y=1.5;floor.receiveShadow=true;scene.add(floor);
+})();
+
+/* roof parapets of the main block (south, north, east, west) */
+parapet('S',0,36,0,12,1.1,1.9,2.2,1.4,true);
+parapet('N',0,36,50,12,1.1,1.9,2.2,1.4,true);
+parapet('E',.6,49.4,36,12,1.1,1.9,2.2,1.4,true);
+parapet('W',.6,49.4,0,12,1.1,1.9,2.2,1.4,true);
+
+/* stair headroom on the roof, over the stair at the south end of the veranda */
+(function(){
+  bx(27.4,34.6,1.4,9.6,12,19.5,M.wall);
+  bx(27.1,34.9,1.1,9.9,19.4,19.9,M.white);
+  var d=new THREE.Mesh(new THREE.ShapeGeometry(archShape(3,0,3.4)),M.wood);d.rotation.y=Math.PI/2;d.position.set(X(34.62),12.1,Z(5.5));d.receiveShadow=true;scene.add(d);
+  var fr=archShape(3.7,-.1,3.4);fr.holes.push(archPath(3,0,3.4));
+  var f=new THREE.Mesh(new THREE.ShapeGeometry(fr),M.white);f.rotation.y=Math.PI/2;f.position.set(X(34.64),12.1,Z(5.5));scene.add(f);
+  var w=new THREE.Mesh(new THREE.ShapeGeometry(archShape(1.6,0,1.6)),M.glass);w.position.set(X(31),15.6,Z(1.4)+.02);scene.add(w);
+})();
+
+/* ======================= ENTRANCE STEPS ======================= */
+bx(39,40.5,19,31,0,.5,M.plinth);
+bx(37.5,39,19,31,0,1.0,M.plinth);
+bx(36,37.5,19,31,0,1.5,M.plinth);
+bx(36,40.6,18.2,19,0,1.3,M.white);
+bx(36,40.6,31,31.8,0,1.3,M.white);
+
+/* ======================= ABLUTION AREA AND TOILET BLOCK (low roof) ======================= */
+(function(){
+  var zr=10.5;
+  /* ablution: east wall with 5' arched opening, north wall, west wall with 3' door */
+  wallY(50,58,35,36,zr,[archHole(1.5,5,1.5,6.0)]);
+  wallX(1,35,57,58,zr,(function(){var h=[];for(var i=0;i<10;i++){h.push(archHole(3.6+3.1*i-2,2,5.0,7.2));}return h;})());
+  wallY(50,58,0,1,zr,[rectHole(2,1.5,5,8)]);
+  /* toilet block x -10..0, y 36..58 */
+  wallY(36,58,-10,-9,zr,[rectHole(2,6.8,5,8.4),rectHole(6.5,6.8,9.5,8.4),rectHole(11,6.8,14,8.4),rectHole(15.5,6.8,18.5,8.4)]);
+  [[2,5],[6.5,9.5],[11,14],[15.5,18.5]].forEach(function(r){var pn=new THREE.Mesh(new THREE.PlaneGeometry(3,1.6),M.glass);pn.rotation.y=Math.PI/2;pn.position.set(X(-9.5),7.6,Z(36+(r[0]+r[1])/2));scene.add(pn);});
+  wallX(-9,0,36,37,zr,[]);
+  wallX(-9,0,57,58,zr,[]);
+  /* roofs */
+  bx(1,35,50,57,9.8,10.45,M.roof,false);
+  bx(-9,0,37,57,9.8,10.45,M.roof,false);
+  bx(-9,1,50,57,9.8,10.45,M.roof,false);
+  /* cornices */
+  bx(-10.5,36.5,58,58.5,9.4,10.2,M.white);
+  bx(36,36.5,50,58.5,9.4,10.2,M.white);
+  bx(-10.5,-10,35.5,58.5,9.4,10.2,M.white);
+  bx(-10.5,0,35.5,36,9.4,10.2,M.white);
+  /* parapets */
+  parapet('N',-10,36,58,zr,1.0,1.6,2.0,1.4,true);
+  parapet('E',50,57.4,36,zr,1.0,1.6,2.0,1.4,true);
+  parapet('W',36.6,57.4,-10,zr,1.0,1.6,2.0,1.4,true);
+  parapet('S',-9.4,0,36,zr,1.0,1.6,2.0,1.4,true);
+  /* floors */
+  bx(1,35,50,57,1.3,1.5,M.tile,false);
+  bx(-9,0,37,57,1.3,1.5,M.tile,false);
+  /* ablution counter and stools inside, visible through the east opening */
+  bx(2,34,55.8,57,1.5,1.8,M.white);
+  for(var i=0;i<10;i++){
+    var cx=3.6+3.1*i;
+    bx(cx-.6,cx+.6,53.4,54.6,1.5,2.05,M.white);
+    /* tap on the wall in front of each seat, with a water stream and a small basin */
+    var tg=new THREE.Group();tg.position.set(X(cx),0,Z(57));
+    var pipe=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,.55,10),M.chrome);pipe.rotation.x=Math.PI/2;pipe.position.set(0,3.3,.27);tg.add(pipe);
+    var spout=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,.3,10),M.chrome);spout.position.set(0,3.15,.52);tg.add(spout);
+    var knob=new THREE.Mesh(new THREE.BoxGeometry(.22,.1,.1),M.chrome);knob.position.set(0,3.55,.1);tg.add(knob);
+    var wat=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,1.1,6),M.water);wat.position.set(0,2.45,.52);tg.add(wat);
+    var basin=new THREE.Mesh(new THREE.CylinderGeometry(.55,.4,.25,16),M.white);basin.position.set(0,1.93,.5);tg.add(basin);
+    tg.traverse(function(o){o.castShadow=false;});scene.add(tg);
+    /* window above the tap: outside arch with glass, plus an inside frame */
+    windowAt('N',cx,58,5.0,2,2.2);
+    windowAt('S',cx,57,5.0,2,2.2,true);
+  }
+  /* frame for the east opening */
+  var g=new THREE.Group();var ring=archShape(5.8,-.3,4.5);ring.holes.push(archPath(5,0,4.5));
+  var fr=new THREE.Mesh(new THREE.ExtrudeGeometry(ring,{depth:.3,bevelEnabled:false}),M.white);fr.castShadow=true;g.add(fr);
+  place(g,'E',36,54,1.5);
+  /* plinth skirt */
+  bx(36,36.25,50,58,0,1.5,M.plinth);
+  bx(-10.25,36.25,58,58.25,0,1.5,M.plinth);
+  bx(-10.25,-10,36,58,0,1.5,M.plinth);
+})();
+
+/* ======================= MINARET on the corner column (white and gold) ======================= */
+(function(){
+  var mx=X(2.7),mz=Z(47.3),base=12;
+  function cyl(rt,rb,h,y,mat,seg){var m=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg||28),mat);m.position.set(mx,y+h/2,mz);m.castShadow=true;m.receiveShadow=true;scene.add(m);return m;}
+  function ribs(n,rad,h,y,w,mat){for(var i=0;i<n;i++){var a=i/n*Math.PI*2;var m=new THREE.Mesh(new THREE.BoxGeometry(w,h,w*.8),mat);m.position.set(mx+Math.cos(a)*rad,y+h/2,mz+Math.sin(a)*rad);m.rotation.y=-a;m.castShadow=true;scene.add(m);}}
+  function rail(rad,y,mat){
+    for(var i=0;i<20;i++){var a=i/20*Math.PI*2;var q=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,1.0,8),mat);q.position.set(mx+Math.cos(a)*rad,y+.5,mz+Math.sin(a)*rad);q.castShadow=true;scene.add(q);}
+    var t=new THREE.Mesh(new THREE.TorusGeometry(rad,.08,8,40),mat);t.rotation.x=Math.PI/2;t.position.set(mx,y+1.0,mz);t.castShadow=true;scene.add(t);
+  }
+  var W=M.white,G=M.gold2;
+  cyl(2.35,2.45,1.0,base,G);                           /* gold base ring */
+  cyl(2.0,2.15,6.0,base+1,W);ribs(12,2.08,6.0,base+1,.24,G);   /* white lower shaft, gold ribs */
+  cyl(2.3,2.3,.4,base+7,G);                            /* gold band */
+  cyl(2.7,2.3,.5,base+7.4,W);                          /* white cornice */
+  cyl(3.0,3.0,.3,base+7.9,G);rail(2.9,base+8.2,G);     /* gold balcony and rail */
+  cyl(1.55,1.7,6.5,base+8.2,G);ribs(8,1.62,6.5,base+8.2,.2,W);  /* gold middle shaft, white ribs */
+  for(var i=0;i<4;i++){var a=i/4*Math.PI*2+Math.PI/4;var w=new THREE.Mesh(new THREE.ShapeGeometry(archShape(.7,0,1.3)),M.glass);
+    w.position.set(mx+Math.cos(a)*1.66,base+11.2,mz+Math.sin(a)*1.66);w.rotation.y=Math.PI/2-a;scene.add(w);}
+  cyl(1.9,1.9,.35,base+14.7,W);
+  cyl(2.35,1.95,.5,base+15.05,G);
+  cyl(2.4,2.4,.25,base+15.55,W);rail(2.3,base+15.8,G);
+  cyl(1.0,1.15,3.4,base+15.8,W);                        /* white upper shaft */
+  cyl(1.5,1.2,.5,base+19.2,G);
+  var dome=new THREE.Mesh(new THREE.SphereGeometry(1.3,28,16,0,Math.PI*2,0,Math.PI/2),G);dome.scale.set(1,1.35,1);dome.position.set(mx,base+19.7,mz);dome.castShadow=true;scene.add(dome);
+  cyl(.1,.14,2.0,base+21.4,G,12);
+  var ball=new THREE.Mesh(new THREE.SphereGeometry(.28,16,12),G);ball.position.set(mx,base+21.5,mz);scene.add(ball);
+  /* four loudspeakers, one toward each direction (east, north, west, south) */
+  function horn(th){var g=new THREE.Group();
+    var cone=new THREE.Mesh(new THREE.CylinderGeometry(.62,.16,1.5,18,1,true),M.grey2);cone.rotation.z=-Math.PI/2;cone.position.x=1.9;cone.castShadow=true;g.add(cone);
+    var drv=new THREE.Mesh(new THREE.CylinderGeometry(.2,.2,.55,12),M.grey2);drv.rotation.z=Math.PI/2;drv.position.x=1.15;g.add(drv);
+    var arm=new THREE.Mesh(new THREE.BoxGeometry(.5,.1,.1),M.grey2);arm.position.x=.95;g.add(arm);
+    g.position.set(mx,base+17.8,mz);g.rotation.y=th;scene.add(g);}
+  horn(0);horn(Math.PI/2);horn(Math.PI);horn(-Math.PI/2);
+  /* crescent (new moon) with a star, gold */
+  var R1=1.5,R2=1.28,d=.55;
+  var xs=(d*d+R1*R1-R2*R2)/(2*d),ys=Math.sqrt(R1*R1-xs*xs);
+  var th1=Math.atan2(ys,xs),ph=Math.atan2(ys,xs-d);
+  var cs=new THREE.Shape();
+  cs.moveTo(xs,ys);cs.absarc(0,0,R1,th1,Math.PI*2-th1,false);cs.absarc(d,0,R2,Math.PI*2-ph,ph,true);
+  var cg=new THREE.Group();cg.position.set(mx,base+25.0,mz);
+  var inner=new THREE.Group();
+  var cres=new THREE.Mesh(new THREE.ExtrudeGeometry(cs,{depth:.2,bevelEnabled:false,curveSegments:48}),G);cres.position.z=-.1;cres.castShadow=true;inner.add(cres);
+  var st=new THREE.Shape();for(var k=0;k<10;k++){var rr=k%2?.14:.34;var aa=Math.PI/2+k*Math.PI/5;var px=Math.cos(aa)*rr,py=Math.sin(aa)*rr;if(k===0)st.moveTo(px,py);else st.lineTo(px,py);}st.closePath();
+  var star=new THREE.Mesh(new THREE.ExtrudeGeometry(st,{depth:.14,bevelEnabled:false}),G);star.position.set(.85,0,-.07);inner.add(star);
+  inner.rotation.z=Math.PI/4;cg.add(inner);cg.rotation.y=Math.PI/4;scene.add(cg);
+})();
+
+/* ======================= FRONT BOUNDARY AND SHRUBS ======================= */
+(function(){
+  var bxw=46;
+  function seg(y0,y1){bx(bxw-.3,bxw+.3,y0,y1,0,1.7,M.white);bx(bxw-.4,bxw+.4,y0,y1,1.7,1.95,M.plinth);
+    for(var y=y0+.6;y<y1;y+=1.4){bx(bxw-.04,bxw+.04,y-.04,y+.04,1.95,4.6,M.iron);}
+    bx(bxw-.05,bxw+.05,y0,y1,4.5,4.65,M.iron,false);}
+  seg(-14,19);seg(31,65.5);
+  [[19,19.8],[30.2,31]].forEach(function(p){bx(bxw-.6,bxw+.6,p[0],p[1],0,5.2,M.white);bx(bxw-.75,bxw+.75,p[0]-.1,p[1]+.1,5.2,5.5,M.plinth);});
+  var shrubMat=[std(0x3d7a35,1),std(0x4a8a3a,1),std(0x356e30,1)];
+  function shrub(x,y,r){var m=new THREE.Mesh(new THREE.SphereGeometry(r,16,12),shrubMat[Math.floor(Math.random()*3)]);m.scale.set(1,.78,1);m.position.set(X(x),r*.7,Z(y));m.castShadow=true;m.receiveShadow=true;scene.add(m);}
+  [3,9.5,14.5,17.2,32.8,36,42,47.5].forEach(function(y){shrub(38.3,y,y===17.2||y===32.8?1.7:1.35);});
+  [6,13,20,28.5].forEach(function(x){shrub(x,-2,1.3);});
+})();
+
+
+/* ======================= ROAD 10 ft NORTH OF THE ABLUTION WALL (east-west) ======================= */
+(function(){
+  var ta=mkTex(256,256,function(cx,w,h){cx.fillStyle='#3b3c3e';cx.fillRect(0,0,w,h);speckle(cx,w,h,6000,.22);},[1,1]);
+  ta.repeat.set(56,2);
+  bx(-270,300,68,88,0,.1,new THREE.MeshStandardMaterial({map:ta,roughness:.95}),false);
+  bx(-270,300,66.5,68,0,.06,M.concrete,false);bx(-270,300,88,89.5,0,.06,M.concrete,false);
+  bx(-270,300,68.4,68.65,.1,.12,M.white,false);bx(-270,300,87.35,87.6,.1,.12,M.white,false);
+  for(var x=-262;x<292;x+=14){bx(x,x+7,77.85,78.15,.1,.12,M.white,false);}
+  function wheel(g,x,z,r){var w=new THREE.Mesh(new THREE.CylinderGeometry(r,r,.7,16),M.dark);w.rotation.x=Math.PI/2;w.position.set(x,r,z);w.castShadow=true;g.add(w);}
+  var lamp=std(0xfff3c0,.3,{emissive:0xffe9a0,emissiveIntensity:.5});
+  function car(col){var g=new THREE.Group();var b=std(col,.4,{metalness:.5});
+    boxIn(g,14,2.2,5.8,b,0,2.0,0);boxIn(g,7,1.6,5.2,b,-.8,3.9,0);boxIn(g,6.6,1.15,5.3,M.glassD,-.8,3.95,0,false);
+    [[-4.4,-2.8],[-4.4,2.8],[4.4,-2.8],[4.4,2.8]].forEach(function(p){wheel(g,p[0],p[1],1.1);});
+    boxIn(g,.12,.5,1.1,lamp,7.02,2.3,1.9,false);boxIn(g,.12,.5,1.1,lamp,7.02,2.3,-1.9,false);return g;}
+  function bus(col){var g=new THREE.Group();var b=std(col,.5,{metalness:.3});
+    boxIn(g,36,7.6,8.3,b,0,5.6,0);boxIn(g,34,2.4,8.4,M.glassD,-.5,6.8,0,false);boxIn(g,36.2,.5,8.4,M.white,0,3.3,0,false);
+    [-11,-9.5,11,12.5].forEach(function(x){[-3.9,3.9].forEach(function(z){wheel(g,x,z,1.6);});});
+    boxIn(g,.12,.7,1.4,lamp,18.02,2.6,2.8,false);boxIn(g,.12,.7,1.4,lamp,18.02,2.6,-2.8,false);return g;}
+  function truck(col){var g=new THREE.Group();var b=std(col,.5,{metalness:.3});
+    boxIn(g,8,6.5,8,b,10,4.4,0);boxIn(g,.2,2.4,7,M.glassD,14.05,6.0,0,false);boxIn(g,19,7.2,8.4,M.white,-4,5.0,0);
+    [[-10,0],[-6,0],[11,0]].forEach(function(p){[-3.9,3.9].forEach(function(z){wheel(g,p[0],z,1.55);});});
+    boxIn(g,.12,.6,1.2,lamp,14.02,2.4,2.8,false);boxIn(g,.12,.6,1.2,lamp,14.02,2.4,-2.8,false);return g;}
+  function bike(col){var g=new THREE.Group();var b=std(col,.5,{metalness:.5});
+    boxIn(g,5.2,1.2,.8,b,0,2.2,0);wheel(g,-2.2,0,1.1);wheel(g,2.2,0,1.1);
+    var body=new THREE.Mesh(new THREE.CylinderGeometry(.5,.5,2.4,10),std(0x2c5aa0,.9));body.position.set(-.3,4.3,0);body.castShadow=true;g.add(body);
+    var hd=new THREE.Mesh(new THREE.SphereGeometry(.5,10,8),std(0xd7a27c,.9));hd.position.set(-.3,5.9,0);g.add(hd);
+    boxIn(g,.12,.4,.5,lamp,2.65,2.9,0,false);return g;}
+  function cng(col){var g=new THREE.Group();var b=std(col,.5,{metalness:.3});
+    boxIn(g,8,3.4,4.6,b,0,2.9,0);boxIn(g,7.4,.5,5.0,M.dark,-.3,5.5,0);boxIn(g,.2,1.8,4.2,M.glassD,3.9,3.7,0,false);
+    wheel(g,2.8,0,1.0);wheel(g,-2.2,-2.1,1.0);wheel(g,-2.2,2.1,1.0);boxIn(g,.12,.4,.8,lamp,4.02,2.2,0,false);return g;}
+  function addV(g,planX,laneY,speed){
+    g.position.set(X(planX),0,Z(laneY));if(speed<0)g.rotation.y=Math.PI;scene.add(g);movers.push({kind:'veh',o:g,v:speed});}
+  addV(car(0xb3262c),-120,83.5,34);addV(bus(0x2c6aa8),40,83.5,22);addV(bike(0x222222),-30,83.5,38);addV(truck(0xcf6a1f),170,83.5,18);
+  addV(car(0xf1f1ee),100,72.5,-30);addV(cng(0x2e8b4b),-80,72.5,-20);addV(bus(0xd9b43a),210,72.5,-25);addV(car(0x9ea4aa),-170,72.5,-36);
+  /* men in white thobes and white headcloth on the walking path outside the east wall */
+  var white=std(0xf8f7f2,.9),black=std(0x1c1c1c,.8);
+  function man(skin,beard){var g=new THREE.Group();var sk=std(skin,.85);
+    var robe=new THREE.Mesh(new THREE.CylinderGeometry(.5,.78,4.3,16),white);robe.position.y=2.55;robe.castShadow=true;g.add(robe);
+    var sh=new THREE.Mesh(new THREE.SphereGeometry(.56,14,10),white);sh.scale.set(1.25,.55,.8);sh.position.y=4.55;sh.castShadow=true;g.add(sh);
+    var head=new THREE.Mesh(new THREE.SphereGeometry(.38,14,10),sk);head.position.y=5.15;head.castShadow=true;g.add(head);
+    var cap=new THREE.Mesh(new THREE.SphereGeometry(.46,16,10,0,Math.PI*2,0,Math.PI*.58),white);cap.position.y=5.22;cap.castShadow=true;g.add(cap);
+    var drape=new THREE.Mesh(new THREE.CylinderGeometry(.36,.6,1.0,12,1,true),std(0xf8f7f2,.9,{side:THREE.DoubleSide}));drape.position.set(0,4.85,-.18);g.add(drape);
+    var agal=new THREE.Mesh(new THREE.TorusGeometry(.43,.045,8,24),black);agal.rotation.x=Math.PI/2;agal.position.y=5.36;g.add(agal);
+    if(beard){var bd=new THREE.Mesh(new THREE.SphereGeometry(.3,10,8),black);bd.scale.set(1,.8,.7);bd.position.set(0,4.98,.22);g.add(bd);}
+    var arms=[];[-1,1].forEach(function(sd){var a=new THREE.Mesh(new THREE.CylinderGeometry(.13,.12,1.9,8),white);a.geometry.translate(0,-.95,0);a.position.set(sd*.68,4.45,0);a.castShadow=true;g.add(a);arms.push(a);});
+    var feet=[];[-1,1].forEach(function(sd){var f=new THREE.Mesh(new THREE.BoxGeometry(.4,.2,.8),black);f.position.set(sd*.28,.1,.1);g.add(f);feet.push(f);});
+    g.userData.legs=arms;g.userData.feet=feet;return g;}
+  [[49.2,-60,3.3,0xb98a64,true],[50.6,-58,3.3,0x9a6b47,false],[51.6,-95,-3.0,0xc79b73,true],[50.2,30,3.6,0xa87a55,true],[48.4,12,-3.2,0xb98a64,false]].forEach(function(p){
+    var g=man(p[3],p[4]);g.position.set(X(p[0]),0,Z(p[1]));g.rotation.y=p[2]>0?Math.PI:0;scene.add(g);
+    movers.push({kind:'ped',o:g,y:p[1],v:p[2],t:Math.random()*6});});
+})();
+function stepMovers(dt){
+  movers.forEach(function(m){
+    if(m.kind==='veh'){m.o.position.x+=m.v*dt;if(m.v>0&&m.o.position.x>X(285))m.o.position.x=X(-245);if(m.v<0&&m.o.position.x<X(-245))m.o.position.x=X(285);}
+    else{m.t+=dt;m.y+=m.v*dt;if(m.y>62){m.y=62;m.v=-Math.abs(m.v);m.o.rotation.y=0;}if(m.y<-140){m.y=-140;m.v=Math.abs(m.v);m.o.rotation.y=Math.PI;}
+      m.o.position.z=Z(m.y);var sw=Math.sin(m.t*5)*.5;var lg=m.o.userData.legs;lg[0].rotation.x=sw;lg[1].rotation.x=-sw;var ft=m.o.userData.feet;if(ft){ft[0].position.z=.1+Math.sin(m.t*5)*.3;ft[1].position.z=.1-Math.sin(m.t*5)*.3;m.o.position.y=Math.abs(Math.sin(m.t*5))*.05;}}
+  });
+}
+
+/* ======================= COMPOUND WALLS, GATES (brick, 10 ft) ======================= */
+(function(){
+  var WH=10;
+  function brickWall(xa,xb,ya,yb){var L=Math.max(xb-xa,yb-ya);bx(xa,xb,ya,yb,0,WH,brickMat(L,WH));bx(xa-.25,xb+.25,ya-.25,yb+.25,WH,WH+.35,M.concrete);}
+  function pilaster(x,y,alongX){var bm=brickMat(1.4,WH+.3);
+    if(alongX){bx(x-.7,x+.7,y-1.0,y+1.0,0,WH+.3,bm);bx(x-.85,x+.85,y-1.15,y+1.15,WH+.3,WH+.65,M.concrete);}
+    else{bx(x-1.0,x+1.0,y-.7,y+.7,0,WH+.3,bm);bx(x-1.15,x+1.15,y-.85,y+.85,WH+.3,WH+.65,M.concrete);}}
+  function pillar(xa,xb,ya,yb,h){bx(xa,xb,ya,yb,0,h,brickMat(1.6,h));bx(xa-.3,xb+.3,ya-.3,yb+.3,h,h+.45,M.concrete);
+    var b=new THREE.Mesh(new THREE.SphereGeometry(.45,14,10),M.concrete);b.position.set(X((xa+xb)/2),h+.9,Z((ya+yb)/2));b.castShadow=true;scene.add(b);}
+  var RY0=65.5,RY1=66.5,YC=66;
+  /* road-side wall, west to east, with a big gate over the walkway and a small pocket gate in the yard */
+  brickWall(-70,39.7,RY0,RY1);brickWall(42.3,44.9,RY0,RY1);brickWall(57.1,130,RY0,RY1);
+  for(var x=-64;x<130;x+=12){if(x>34&&x<60)continue;pilaster(x,YC,true);}
+  /* big gate: two iron leaves between brick pillars, opening 9 ft wide */
+  pillar(44.9,46.5,RY0-.3,RY1+.3,12);pillar(55.5,57.1,RY0-.3,RY1+.3,12);
+  bx(46.5,55.5,RY0,RY1,9.7,10.35,M.concrete);
+  function leaf(xa,xb,yc,h){
+    var w=xb-xa,n=Math.round(w/.4);
+    for(var i=0;i<=n;i++){var x=xa+w*i/n;bx(x-.04,x+.04,yc-.04,yc+.04,.4,h,M.ironG,false);
+      var sp=new THREE.Mesh(new THREE.ConeGeometry(.1,.4,6),M.ironG);sp.position.set(X(x),h+.2,Z(yc));sp.castShadow=true;scene.add(sp);}
+    [.5,h*.5,h-.5].forEach(function(z){bx(xa,xb,yc-.07,yc+.07,z-.09,z+.09,M.ironG);});
+    bx(xa,xb,yc-.05,yc+.05,.4,2.6,M.ironG);
+  }
+  leaf(46.5,50.9,YC,9.2);leaf(51.1,55.5,YC,9.2);
+  bx(50.85,51.15,YC-.1,YC+.1,.4,9.4,M.gold2);
+  /* small pocket gate: single door, 2'-7" wide, straight from the road into the yard */
+  bx(39.7,42.3,RY0,RY1,7.4,WH,brickMat(2.6,2.6));
+  bx(39.5,39.7,RY0-.1,RY1+.1,0,7.5,M.white);bx(42.3,42.5,RY0-.1,RY1+.1,0,7.5,M.white);bx(39.5,42.5,RY0-.1,RY1+.1,7.3,7.6,M.white);
+  (function(){var w=42.3-39.7,n=Math.round(w/.35);
+    for(var i=0;i<=n;i++){var x=39.7+w*i/n;bx(x-.035,x+.035,YC-.035,YC+.035,.3,7.2,M.ironG,false);}
+    [.4,3.6,7.0].forEach(function(z){bx(39.7,42.3,YC-.06,YC+.06,z-.08,z+.08,M.ironG);});
+    bx(39.7,42.3,YC-.05,YC+.05,.3,3.4,M.ironG);
+    bx(41.9,42.15,YC-.15,YC+.15,3.6,3.85,M.gold2);})();
+  /* paved yard path from the pocket gate down to the mosque entrance */
+  bx(39.7,42.3,29.9,65.5,0,.1,paveMat(2.6,35.6),false);
+  /* west wall: 5 ft from the mihrab, next to the toilet block, from the road wall to the south end */
+  brickWall(-13,-12,-40,66.5);
+  for(var y=-34;y<62;y+=12)pilaster(-12.5,y,false);
+})();
+
+/* ======================= SKY, LIGHTS ======================= */
+(function(){
+  var sky=new THREE.Mesh(new THREE.SphereGeometry(1000,32,16),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,
+    uniforms:{top:{value:new THREE.Color(0x4a90d4)},mid:{value:new THREE.Color(0x9fcdf0)},hor:{value:new THREE.Color(0xe9f2f3)}},
+    vertexShader:'varying vec3 vP;void main(){vP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
+    fragmentShader:'varying vec3 vP;uniform vec3 top;uniform vec3 mid;uniform vec3 hor;void main(){float h=normalize(vP).y;vec3 c=mix(hor,mid,smoothstep(0.0,.22,h));c=mix(c,top,smoothstep(.18,.85,h));gl_FragColor=vec4(c,1.0);}'}));
+  scene.add(sky);
+  var cm=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.9,fog:false});
+  var spots=[[-250,190,-350],[200,230,-420],[420,170,-120],[-420,210,60],[80,260,-600],[-90,200,300]];
+  spots.forEach(function(p){for(var i=0;i<6;i++){var s=new THREE.Mesh(new THREE.SphereGeometry(28+Math.random()*26,12,8),cm);s.scale.y=.45;s.position.set(p[0]+i*34-80,p[1]+Math.random()*10,p[2]+Math.random()*20);scene.add(s);}});
+  scene.add(new THREE.HemisphereLight(0xcfe3ff,0x6b8a4a,.85));
+  var sun=new THREE.DirectionalLight(0xfff0d6,1.75);
+  sun.position.set(70,95,105);sun.castShadow=true;
+  sun.shadow.mapSize.set(coarse?1024:2048,coarse?1024:2048);sun.shadow.camera.left=-95;sun.shadow.camera.right=95;sun.shadow.camera.top=95;sun.shadow.camera.bottom=-95;
+  sun.shadow.camera.near=10;sun.shadow.camera.far=380;sun.shadow.bias=-.0004;sun.shadow.normalBias=.06;
+  scene.add(sun);
+  var p1=new THREE.PointLight(0xfff0cc,.55,50);p1.position.set(X(31),7,Z(25));scene.add(p1);
+  var p2=new THREE.PointLight(0xfff0cc,.45,60);p2.position.set(X(13),8,Z(25));scene.add(p2);
+  var p3=new THREE.PointLight(0xfff0cc,.4,40);p3.position.set(X(18),7,Z(54));scene.add(p3);
+})();
+
+/* ======================= CAMERA AND CONTROLS ======================= */
+var target=new THREE.Vector3(-3,9,-4);
+var cam={az:Math.PI/4,el:.2,R:128};
+var views={se:{az:Math.PI/4,el:.2,R:128},e:{az:Math.PI/2,el:.12,R:100},s:{az:0.02,el:.12,R:105},nw:{az:Math.PI*1.25,el:.2,R:128},air:{az:Math.PI/4,el:.82,R:150},road:{az:Math.PI*1.02,el:.14,R:118}};
+/* base R is tuned for a wide screen; narrow screens pull back so the width still fits */
+var fit=1,offY=0,cssW=1,cssH=1;
+var zoomK={close:.6,far:1},zoomKey='far',zoomMul=zoomK.far;
+var topEl=document.querySelector('.top'),dock=document.getElementById('dock'),panel=document.getElementById('panel'),tabView=document.getElementById('tabView'),ttl=document.getElementById('ttl');
+var root=document.documentElement,K=1;
+function isCompact(){return root.getAttribute('data-compact')==='1';}
+/* Some browsers (Chrome's "Desktop site", forced desktop mode) lay the page out about 3x wider than the phone and ignore the viewport tag.
+   Detect that on touch screens and scale the whole UI (rem units) so controls keep a real phone size. */
+function measureUI(){
+  var w=window.innerWidth,h=window.innerHeight,k=1;
+  var touch=coarse||(navigator.maxTouchPoints||0)>0;
+  if(touch&&window.screen&&screen.width&&screen.height){
+    var sw=Math.min(screen.width,screen.height),sl=Math.max(screen.width,screen.height);
+    var ew=h>w?sw:sl;
+    if(ew>0&&w>ew*1.15)k=Math.min(4,w/ew);
+  }
+  K=k;root.style.fontSize=(16*k)+'px';root.style.setProperty('--k',k);
+  root.setAttribute('data-compact',(w/k<=600)?'1':'0');
+  root.setAttribute('data-short',(h/k<=500&&w>h)?'1':'0');
+}
+function layout(){
+  measureUI();
+  var w=cssW=window.innerWidth,h=cssH=window.innerHeight;
+  renderer.setSize(w,h,false);
+  var asp=w/h;camera.aspect=asp;
+  camera.fov=asp<.8?52:38;
+  var hHalf=Math.tan(camera.fov*Math.PI/360)*asp;
+  fit=Math.max(1,.38/hHalf);
+  /* free band between the title card and whatever covers the bottom (dock or the notes sheet) */
+  var tb=0;Array.prototype.forEach.call(topEl.children,function(c){tb=Math.max(tb,c.getBoundingClientRect().bottom);});
+  var dr=dock.getBoundingClientRect(),bt=dr.top,open=notes.style.display==='block';
+  if(isCompact()){
+    notes.style.bottom=(h-dr.top+8*K)+'px';
+    notes.style.maxHeight=Math.max(120,Math.min(h*.55,dr.top-tb-16*K))+'px';
+  }else{
+    notes.style.bottom='auto';
+    notes.style.maxHeight=Math.max(120,dr.top-topEl.getBoundingClientRect().top-84*K)+'px';
+  }
+  if(open&&isCompact())bt=Math.min(bt,notes.getBoundingClientRect().top);
+  offY=(tb+bt)/2-h/2;
+  if(offY)camera.setViewOffset(w,h,0,-offY,w,h);else camera.clearViewOffset();
+  camera.updateProjectionMatrix();apply();
+}
+function apply(){
+  var ce=Math.cos(cam.el),R=cam.R*fit*zoomMul;
+  camera.position.set(target.x+R*ce*Math.sin(cam.az),target.y+R*Math.sin(cam.el),target.z+R*ce*Math.cos(cam.az));
+  camera.lookAt(target);
+}
+var laid;function relayout(){if(laid)cancelAnimationFrame(laid);laid=requestAnimationFrame(function(){laid=0;layout();});}
+window.addEventListener('resize',relayout);
+window.addEventListener('orientationchange',function(){relayout();setTimeout(layout,350);});
+if(window.visualViewport)window.visualViewport.addEventListener('resize',relayout);
+var notes,nb;
+notes=document.getElementById('notes');nb=document.getElementById('nb');
+layout();
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(layout);
+var tween=null;
+function goTo(k){
+  var v=views[k];var da=v.az-cam.az;while(da>Math.PI)da-=2*Math.PI;while(da<-Math.PI)da+=2*Math.PI;
+  tween={t0:performance.now(),d:reduceMotion?1:900,a0:cam.az,a1:cam.az+da,e0:cam.el,e1:v.el,r0:cam.R,r1:v.R,z0:zoomMul,z1:zoomK[zoomKey]};
+}
+var zbtns=document.querySelectorAll('#zoom button');
+Array.prototype.forEach.call(zbtns,function(b){b.addEventListener('click',function(){
+  zoomKey=b.getAttribute('data-z');
+  Array.prototype.forEach.call(zbtns,function(x){x.setAttribute('aria-pressed',x===b?'true':'false');});
+  tween={t0:performance.now(),d:reduceMotion?1:700,a0:cam.az,a1:cam.az,e0:cam.el,e1:cam.el,r0:cam.R,r1:cam.R,z0:zoomMul,z1:zoomK[zoomKey]};});});
+var btns=document.querySelectorAll('#views button');
+Array.prototype.forEach.call(btns,function(b){b.addEventListener('click',function(){
+  Array.prototype.forEach.call(btns,function(x){x.setAttribute('aria-pressed',x===b?'true':'false');});goTo(b.getAttribute('data-v'));if(b.scrollIntoView)b.scrollIntoView({inline:'center',block:'nearest',behavior:reduceMotion?'auto':'smooth'});});});
+function setNotes(on){notes.style.display=on?'block':'none';panel.hidden=on;
+  nb.setAttribute('aria-selected',on?'true':'false');tabView.setAttribute('aria-selected',on?'false':'true');
+  if(on)notes.scrollTop=0;relayout();if(on)notes.focus({preventScroll:true});}
+nb.addEventListener('click',function(){setNotes(notes.style.display!=='block');});
+tabView.addEventListener('click',function(){setNotes(false);});
+document.getElementById('nx').addEventListener('click',function(){setNotes(false);nb.focus({preventScroll:true});});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&notes.style.display==='block')setNotes(false);});
+/* Safari ignores user-scalable=no: stop page pinch-zoom and double-tap zoom */
+['gesturestart','gesturechange','gestureend'].forEach(function(n){document.addEventListener(n,function(e){e.preventDefault();});});
+document.addEventListener('touchmove',function(e){if(e.touches.length>1&&!notes.contains(e.target))e.preventDefault();},{passive:false});
+document.addEventListener('dblclick',function(e){e.preventDefault();});
+function quiet(){if(ttl.classList.contains('quiet'))return;ttl.classList.add('quiet');setTimeout(function(){ttl.classList.add('gone');relayout();},reduceMotion?0:520);}
+var ptrs={},lastD=0;
+var moved=false;
+canvas.addEventListener('pointerdown',function(e){try{canvas.setPointerCapture(e.pointerId);}catch(x){}ptrs[e.pointerId]={x:e.clientX,y:e.clientY};if(tween){zoomMul=tween.z1;tween=null;}lastD=0;moved=false;});
+canvas.addEventListener('pointermove',function(e){
+  var p=ptrs[e.pointerId];if(!p)return;
+  var ids=Object.keys(ptrs);
+  if(ids.length===1){cam.az-=(e.clientX-p.x)*.006;cam.el=Math.max(.03,Math.min(1.45,cam.el+(e.clientY-p.y)*.005));}
+  if(Math.abs(e.clientX-p.x)+Math.abs(e.clientY-p.y)>0){moved=true;quiet();}
+  p.x=e.clientX;p.y=e.clientY;
+  if(ids.length===2){var a=ptrs[ids[0]],b=ptrs[ids[1]];var d=Math.hypot(a.x-b.x,a.y-b.y);if(lastD)cam.R=Math.max(35,Math.min(340,cam.R*lastD/d));lastD=d;}
+  apply();
+});
+function up(e){var was=Object.keys(ptrs).length===1;delete ptrs[e.pointerId];lastD=0;if(e.type==='pointerup'&&was&&!moved&&isCompact()&&notes.style.display==='block')setNotes(false);}
+canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);
+canvas.addEventListener('wheel',function(e){e.preventDefault();quiet();cam.R=Math.max(35,Math.min(340,cam.R*Math.exp(e.deltaY*.001)));apply();},{passive:false});
+var lastT=0,acc=0,nf=0;
+function frame(now){
+  var raw=(now-(lastT||now))/1000;var dt=Math.min(.05,Math.max(0,raw));lastT=now;if(!reduceMotion)stepMovers(dt);
+  if(raw>0&&raw<.5){acc+=raw;nf++;if(nf===90){if(acc/nf>.028&&pr>1){pr=Math.max(1,pr-.5);renderer.setPixelRatio(pr);layout();}acc=0;nf=0;}}
+  if(tween){var t=Math.min(1,(now-tween.t0)/tween.d);var k=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+    cam.az=tween.a0+(tween.a1-tween.a0)*k;cam.el=tween.e0+(tween.e1-tween.e0)*k;cam.R=tween.r0+(tween.r1-tween.r0)*k;zoomMul=tween.z0+(tween.z1-tween.z0)*k;apply();if(t>=1)tween=null;}
+  renderer.render(scene,camera);requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
